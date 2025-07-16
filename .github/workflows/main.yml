@@ -1,0 +1,85 @@
+import os
+import requests
+import tweepy
+from bs4 import BeautifulSoup
+
+# X API Keys from GitHub Secrets
+X_CONSUMER_KEY = os.getenv("X_CONSUMER_KEY")
+X_CONSUMER_SECRET = os.getenv("X_CONSUMER_SECRET")
+X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
+X_ACCESS_SECRET = os.getenv("X_ACCESS_SECRET")
+
+HEADERS = {'User-Agent': 'Mozilla/5.0'}
+
+def get_channels_headlines():
+    url = 'https://www.channelstv.com/'
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    items = soup.select('.post-title a')[:3]
+    return [f"Channels TV: {i.text.strip()}" for i in items]
+
+def get_vanguard_headlines():
+    url = 'https://www.vanguardngr.com/'
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    items = soup.select('.td-module-title a')[:3]
+    return [f"Vanguard: {i.text.strip()}" for i in items]
+
+def get_arise_headlines():
+    url = 'https://www.arise.tv/'
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    items = soup.select('h2.post-title a')[:3]
+    return [f"Arise News: {i.text.strip()}" for i in items]
+
+def get_cablenews_headlines():
+    url = 'https://www.thecable.ng/'
+    res = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    items = soup.select('.post-title a')[:3]
+    return [f"The Cable: {i.text.strip()}" for i in items]
+
+def compile_headlines():
+    headlines = []
+    try:
+        headlines += get_channels_headlines()
+    except Exception as e:
+        headlines.append("Channels TV: Error loading.")
+    try:
+        headlines += get_vanguard_headlines()
+    except Exception as e:
+        headlines.append("Vanguard: Error loading.")
+    try:
+        headlines += get_arise_headlines()
+    except Exception as e:
+        headlines.append("Arise News: Error loading.")
+    try:
+        headlines += get_cablenews_headlines()
+    except Exception as e:
+        headlines.append("The Cable: Error loading.")
+    return headlines
+
+def post_to_x(tweet):
+    auth = tweepy.OAuth1UserHandler(
+        X_CONSUMER_KEY, X_CONSUMER_SECRET,
+        X_ACCESS_TOKEN, X_ACCESS_SECRET
+    )
+    api = tweepy.API(auth)
+    api.update_status(tweet)
+
+def format_tweet(headlines):
+    tweet = "🇳🇬 *Top Nigerian News Today*\n\n"
+    for line in headlines:
+        if len(tweet) + len(line) + 1 < 280:
+            tweet += f"{line}\n"
+        else:
+            break
+    return tweet.strip()
+
+if __name__ == "__main__":
+    headlines = compile_headlines()
+    if headlines:
+        tweet = format_tweet(headlines)
+        post_to_x(tweet)
+    else:
+        print("No headlines found.")
