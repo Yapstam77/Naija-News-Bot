@@ -48,5 +48,5 @@ def post_news():
     api.update_status(tweet)
     print("✅ Tweeted:\n", tweet)
 
-if _name_ == "_main_":
-    post_news()
+if __name__ == "__main__":
+    post_news()
